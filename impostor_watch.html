@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10131b">
+<title>Impostor Watch</title>
+<style>
+:root{color-scheme:dark;--bg:#10131b;--panel:#1b2130;--ink:#f5f7ff;--muted:#aeb8cc;--accent:#9ce6c0;--warn:#ffb5ad}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:14px}
+main{width:min(100%,390px);background:var(--panel);border:1px solid #30394c;border-radius:28px;padding:22px 18px;text-align:center;box-shadow:0 12px 40px #0005}
+h1{font-size:25px;margin:0 0 6px}p{color:var(--muted);margin:8px 0 16px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:800}
+.word{font-size:31px;font-weight:850;overflow-wrap:anywhere;margin:22px 0}
+button{width:100%;border:0;border-radius:16px;padding:15px 12px;margin-top:10px;font-size:16px;font-weight:800;background:var(--accent);color:#102019;min-height:50px}
+button.secondary{background:#31394c;color:var(--ink)}button.danger{background:#482b32;color:#ffe7e4}
+.hidden{display:none!important}.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;margin-top:14px}
+.small{font-size:12px}.note{font-size:12px;color:#aeb8cc;margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Party game · 6 players</div>
+  <h1>🎭 Impostor Watch</h1>
+  <section id="start">
+    <p>Pass the device around. Each player checks their role privately.</p>
+    <p><b>5 players</b> get the same word.<br><b>1 player</b> is the impostor.</p>
+    <button id="startBtn">Start a new round</button>
+    <div class="note">Keep the screen hidden from everyone except the current player.</div>
+  </section>
+  <section id="turn" class="hidden">
+    <div id="playerLabel" class="eyebrow">Player 1 of 6</div>
+    <p id="instruction">Make sure nobody else is looking.</p>
+    <div id="revealArea" class="hidden">
+      <div id="roleLabel" class="eyebrow">Your secret word</div>
+      <div id="secret" class="word"></div>
+      <p id="subtext"></p>
+      <button id="hideBtn" class="secondary">Hide my role</button>
+    </div>
+    <button id="revealBtn">Tap to reveal</button>
+    <button id="nextBtn" class="secondary hidden">Pass to next player</button>
+    <div id="count" class="count">0 of 6 roles viewed</div>
+  </section>
+  <section id="discussion" class="hidden">
+    <div class="eyebrow">All roles assigned</div>
+    <div class="word">Discuss &amp; vote 🗳️</div>
+    <p>Go around the group and give one clue about your word. Don't say the word itself. Then vote on who you think the impostor is.</p>
+    <button id="againBtn">Play another round</button>
+    <button id="homeBtn" class="secondary">Back to start</button>
+  </section>
+</main>
+<script>
+const words = [
+"Penguin","Pancake","Airport","Volcano","Guitar","Dentist","Rainbow","Popcorn",
+"Elephant","Passport","Chocolate","Helicopter","Waterfall","Astronaut","Library",
+"Strawberry","Toothbrush","Rollercoaster","Umbrella","Football","Coconut","Dinosaur",
+"Microwave","Snowman","Telescope","Sandwich","Pirate","Firefighter","Cupcake","Moonlight",
+"Backpack","Jellyfish","Skateboard","Campsite","Treasure","Mermaid","Lighthouse","Sunglasses",
+"Keyboard","Pineapple","Submarine","Ice cream","Basketball","Butterfly","Train station","Robot"
+];
+let roles=[], word="", player=0, seen=0;
+const $=id=>document.getElementById(id);
+function show(section){["start","turn","discussion"].forEach(s=>$(s).classList.toggle("hidden",s!==section))}
+function newRound(){
+ word=words[Math.floor(Math.random()*words.length)];
+ const impostor=Math.floor(Math.random()*6);
+ roles=Array.from({length:6},(_,i)=>i===impostor?null:word);
+ // Shuffle the role assignment so the impostor position isn't predictable.
+ for(let i=roles.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[roles[i],roles[j]]=[roles[j],roles[i]]}
+ player=0;seen=0;show("turn");renderTurn();
+}
+function renderTurn(){
+ $("playerLabel").textContent=`Player ${player+1} of 6`;
+ $("instruction").textContent="Pass the device to this player. Make sure nobody else is looking.";
+ $("revealArea").classList.add("hidden");$("nextBtn").classList.add("hidden");$("revealBtn").classList.remove("hidden");
+ $("count").textContent=`${seen} of 6 roles viewed`;
+}
+$("startBtn").onclick=newRound;
+$("revealBtn").onclick=()=>{
+ $("revealBtn").classList.add("hidden");$("revealArea").classList.remove("hidden");
+ const isImp=roles[player]===null;
+ $("roleLabel").textContent=isImp?"SECRET ROLE":"YOUR SECRET WORD";
+ $("secret").textContent=isImp?"YOU ARE THE IMPOSTOR":roles[player];
+ $("secret").style.color=isImp?"var(--warn)":"var(--accent)";
+ $("subtext").textContent=isImp?"Blend in. Give a vague clue and try to identify the secret word.":"Give a clue without saying the word itself.";
+ seen++;$("count").textContent=`${seen} of 6 roles viewed`;
+ $("nextBtn").classList.remove("hidden");
+};
+$("hideBtn").onclick=()=>{
+ $("revealArea").classList.add("hidden");$("nextBtn").classList.add("hidden");$("revealBtn").classList.remove("hidden");
+ $("instruction").textContent="Role hidden. Pass the device along.";
+};
+$("nextBtn").onclick=()=>{
+ if(player<5){player++;renderTurn()}else{show("discussion")}
+};
+$("againBtn").onclick=newRound;
+$("homeBtn").onclick=()=>show("start");
+</script>
+</body>
+</html>
